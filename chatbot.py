@@ -5,6 +5,7 @@ import requests
 from colorama import Fore
 from pystyle import Center, Colors, Colorate
 import random
+import socks
 
 os.system(f"title Kichi779 - Twitch Chat bot v1.5 ")
 
@@ -41,6 +42,9 @@ print(Colors.red, Center.XCenter("ANNOUNCEMENT"))
 print(Colors.yellow, Center.XCenter(f"{announcement}"))
 print("")
 print("")
+
+socks.set_default_proxy(socks.SOCKS5, "70.166.167.38", 57728)
+socket.socket = socks.socksocket
 
 
 server = "irc.chat.twitch.tv"
