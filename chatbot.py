@@ -4,6 +4,7 @@ import socket
 import requests
 from colorama import Fore
 from pystyle import Center, Colors, Colorate
+import random
 
 os.system(f"title Kichi779 - Twitch Chat bot v1.5 ")
 
@@ -57,8 +58,7 @@ if message_option == "1":
 
 while True:
     if message_option == "1":
-        message = messages[index % len(messages)].strip()
-        index += 1
+        message = random.choice(messages).strip()
         time.sleep(interval)
     else:
         with open("oauths.txt", "r") as file:
