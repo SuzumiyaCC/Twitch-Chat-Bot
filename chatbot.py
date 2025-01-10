@@ -5,8 +5,10 @@ import requests
 from colorama import Fore
 from pystyle import Center, Colors, Colorate
 import random
+import socks
 
-os.system(f"title Kichi779 - Twitch Chat bot v1.5 ")
+
+
 
 def print_announcement():
     try:
@@ -43,6 +45,10 @@ print("")
 print("")
 
 
+
+#socks.set_default_proxy(socks.SOCKS5, "195.98.77.224", 1080)
+#socket.socket = socks.socksocket
+
 server = "irc.chat.twitch.tv"
 port = 6667
 channel = input(Colorate.Vertical(Colors.green_to_blue, "Enter your channel name: "))
@@ -50,7 +56,7 @@ message_option = input(Colorate.Vertical(Colors.green_to_blue,"How do you want t
 oauths = []
 
 if message_option == "1":
-    with open("messages.txt", "r") as file:
+    with open("messages.txt", "r", encoding='utf-8') as file:
         messages = file.readlines()
 
     interval = int(input(Colorate.Vertical(Colors.green_to_blue,"How often should your messages be sent? (Seconds): ")))
