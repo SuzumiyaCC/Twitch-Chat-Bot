@@ -1,107 +1,88 @@
 import os
 import time
-import socket
-import requests
-from colorama import Fore
-from pystyle import Center, Colors, Colorate
 import random
+import asyncio
 import socks
+import socket
+from pystyle import Center, Colors, Colorate
 
+# Настройки прокси
+proxy_servers = [
+    {"host": "109.172.86.33", "port": 54333},
+    {"host": "116.202.48.78", "port": 52497},
+    {"host": "65.21.164.240", "port": 39846},    
 
+]
 
-
-def print_announcement():
-    try:
-        r = requests.get("https://raw.githubusercontent.com/Kichi779/Twitch-Chat-Bot/main/announcement.txt", headers={"Cache-Control": "no-cache"})
-        announcement = r.content.decode('utf-8').strip()
-        return announcement
-    except:
-        time.sleep(0)
-
-
-def main():
-    if not check_for_updates():
-        return
-    print_announcement()
-
-print(Colorate.Vertical(Colors.red_to_yellow, Center.XCenter("""
-           
-                       ▄█   ▄█▄  ▄█    ▄████████    ▄█    █▄     ▄█  
-                       ███ ▄███▀ ███   ███    ███   ███    ███   ███  
-                       ███▐██▀   ███▌  ███    █▀    ███    ███   ███▌ 
-                      ▄█████▀    ███▌  ███         ▄███▄▄▄▄███▄▄ ███▌ 
-                     ▀▀█████▄    ███▌  ███        ▀▀███▀▀▀▀███▀  ███▌ 
-                       ███▐██▄   ███   ███    █▄    ███    ███   ███  
-                       ███ ▀███▄ ███   ███    ███   ███    ███   ███  
-                       ███   ▀█▀ █▀    ████████▀    ███    █▀    █▀   
-                       ▀                                             
- Improvements can be made to the code. If you're getting an error, visit my discord.  
-                             Github  github.com/kichi779    """)))
-announcement = print_announcement()
-print("")
-print(Colors.red, Center.XCenter("ANNOUNCEMENT"))
-print(Colors.yellow, Center.XCenter(f"{announcement}"))
-print("")
-print("")
-
-
-
-#socks.set_default_proxy(socks.SOCKS5, "195.98.77.224", 1080)
-#socket.socket = socks.socksocket
-
+# Настройки Twitch IRC
 server = "irc.chat.twitch.tv"
 port = 6667
-channel = input(Colorate.Vertical(Colors.green_to_blue, "Enter your channel name: "))
-message_option = input(Colorate.Vertical(Colors.green_to_blue,"How do you want to send messages? (1. Send messages from messages.txt, 2. Send messages by selecting a bot): "))
-oauths = []
 
-if message_option == "1":
-    with open("messages.txt", "r", encoding='utf-8') as file:
-        messages = file.readlines()
+# Чтение токенов и сообщений
+with open("oauths.txt", "r") as file:
+    oauths = [line.strip() for line in file.readlines()]
 
-    interval = int(input(Colorate.Vertical(Colors.green_to_blue,"How often should your messages be sent? (Seconds): ")))
-    index = 0
+with open("messages.txt", "r", encoding='utf-8') as file:
+    messages = [line.strip() for line in file.readlines()]
 
-while True:
-    if message_option == "1":
-        message = random.choice(messages).strip()
-        time.sleep(interval)
-    else:
-        with open("oauths.txt", "r") as file:
-            oauths = file.readlines()
+# Асинхронная функция для отправки сообщения
+async def send_message(oauth, channel, message, proxy):
+    try:
+        # Настройка прокси
+        socks.set_default_proxy(socks.SOCKS5, proxy["host"], proxy["port"])
+        socket.socket = socks.socksocket
 
-        print("Available bots:")
-        for i in range(len(oauths)):
-            print(f"{i+1}. Bot {i+1}")
+        # Подключение к Twitch IRC
+        reader, writer = await asyncio.open_connection(server, port)
 
-        bot_choice = int(input(Colorate.Vertical(Colors.green_to_blue,"Select a bot to send the message with (1, 2, 3, ...): ")))
-        if bot_choice > len(oauths):
-            print("Invalid bot choice!")
-            time.sleep(5)
-            exit()
+        # Авторизация и отправка сообщения
+        writer.write(f"PASS {oauth}\n".encode())
+        writer.write(f"NICK bot\n".encode())
+        writer.write(f"JOIN #{channel}\n".encode())
+        await writer.drain()
 
-        oauth = oauths[bot_choice-1].strip()
-        nickname = f"bot_{bot_choice}"
-        message = input(Colorate.Vertical(Colors.green_to_blue,"Enter the message you want to send: "))
+        writer.write(f"PRIVMSG #{channel} :{message}\n".encode())
+        await writer.drain()
 
-    irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    irc.connect((server, port))
+        print(f"[{time.strftime('%X')}] Sent message from token: {oauth} - Proxy: {proxy['host']}:{proxy['port']} - {message}")
 
-    if message_option == "1":
+        # Закрытие соединения
+        writer.close()
+        await writer.wait_closed()
+    except Exception as e:
+        print(f"Error sending message: {e}")
 
-        with open("oauths.txt", "r") as file:
-            oauths = file.readlines()
+# Основная асинхронная функция
+async def main():
+    channel = input(Colorate.Vertical(Colors.green_to_blue, "КАНАЛ ДАЙ ДАЙ ТВАРЬ: "))
+    message_option = input(Colorate.Vertical(Colors.green_to_blue, "ЧЕ ДЕЛАЕМ? (1. ОТПРАВЛЯЕМ С ОДНОГО, 2. ОТПРАВЛЯЕМ С РАНДОМНЫХ ТОКЕНОВ): "))
 
-        print(f"[{time.strftime('%X')}] Sending message: {message}")
-        irc.send(f"PASS {oauths[index % len(oauths)]}\n".encode("utf-8"))
-        irc.send(f"NICK bot\n".encode("utf-8"))
-        irc.send(f"JOIN #{channel}\n".encode("utf-8"))
-        irc.send(f"PRIVMSG #{channel} :{message}\n".encode("utf-8"))
-    else:
-        print(f"[{time.strftime('%X')}] Sending message: {message}")
-        irc.send(f"PASS {oauth}\n".encode("utf-8"))
-        irc.send(f"NICK {nickname}\n".encode("utf-8"))
-        irc.send(f"JOIN #{channel}\n".encode("utf-8"))
-        irc.send(f"PRIVMSG #{channel} :{message}\n".encode("utf-8"))
+    while True:  # Бесконечный цикл
+        tasks = []
+        if message_option == "1":
+            # Отправка с одного токена
+            oauth = oauths[0]
+            for _ in range(10):  # Отправка 10 сообщений
+                proxy = random.choice(proxy_servers)
+                message = random.choice(messages)
+                task = asyncio.create_task(send_message(oauth, channel, message, proxy))
+                tasks.append(task)
+        else:
+            # Отправка с рандомных токенов
+            for oauth in oauths:
+                proxy = random.choice(proxy_servers)
+                message = random.choice(messages)
+                task = asyncio.create_task(send_message(oauth, channel, message, proxy))
+                tasks.append(task)
 
-    irc.close()
+        # Ожидание завершения всех задач
+        await asyncio.gather(*tasks)
+
+        # Случайный промежуток времени перед следующим запуском
+        sleep_time = random.uniform(15, 20)  # От 1 до 3 минут
+        print(f"[{time.strftime('%X')}] Waiting for {sleep_time:.2f} seconds before the next cycle...")
+        await asyncio.sleep(sleep_time)
+
+# Запуск асинхронного кода
+if __name__ == "__main__":
+    asyncio.run(main())
