@@ -15,7 +15,7 @@
 ### Клонирование репозитория
 1. Склонируйте репозиторий с GitHub:
    ```bash
-   git clone https://github.com/SuzumiyaCC/tw-ChatBot.git
+   git clone https://github.com/SuzumiyaCC/Twitch-Chat-Bot.git
 
 
 # Получение OAuth кода
